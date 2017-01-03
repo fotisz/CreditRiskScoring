@@ -1,0 +1,554 @@
+<html>
+<head>
+<title>Attack discrimination with smarter machine learning</title>
+<link href="https://fonts.googleapis.com/css?family=Roboto:100,300,400,700"
+      rel="stylesheet" /><style>
+
+
+body {
+  font: 11pt Roboto;
+  font-weight: 300;
+  margin-left: 60px;
+  margin-top:20px;
+  margin-bottom: 80px;
+}
+td {
+  font-size: 10pt;
+}
+ul {
+  line-height: 180%;
+}
+h1 {
+  font-size: 30px;
+  font-weight: 300;
+}
+.thin {
+  width: 170px;
+}
+.annotation {
+  color: #a00;
+  font-size: 10pt;
+  visibility: hidden;
+  stroke: #d00;
+  stroke-width: 5;
+  fill:none;
+}
+.prose {
+  width: 600px;
+  margin-bottom: 60px;
+}
+.demo {
+  font: 10pt;
+  color: #fff;
+  padding: 6px;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
+  margin-bottom: 6px;
+  width: 140px;
+  background: #a00;
+}
+.broken {
+  color: #f00;
+}
+.readout {
+  font-weight: 700;
+}
+.title {
+  font-weight: 700;
+}
+.big-label {
+  font-size: 16pt;
+}
+.figure-title {
+  font-size: 24px;
+  font-weight: 400;
+}
+.figure-caption {
+  font-weight:100;
+  margin-bottom: 20px;
+}
+.histogram-axis {
+  font-size: 9pt;
+  font-weight: 100;
+  color: #000;
+}
+.histogram-legend {
+  margin-top: 16px;
+}
+.instructions {
+  font-weight: 700;
+}
+.correctness-label {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #000;
+}
+.explanation {
+  font-size: 9pt;
+  font-weight: 100;
+  color: #ccc;
+}
+.pie-label {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #000;
+}
+.pie-number {
+  font-size: 9pt;
+  font-weight: 300;
+  color: #000;
+}
+.legend-label {
+  font-size: 8pt;
+  font-weight: 300;
+  color: #666;
+}
+.bold-label {
+  font-size: 10pt;
+  font-weight: 700;
+}
+.margin-text {
+  font-size: 9pt;
+  font-weight: 300;
+  color: #666;
+}
+.margin-bold {
+  font-size: 9pt;
+  font-weight: 700;
+}
+.domain {
+  display: none;
+}
+.profit-readout {
+  margin-left: 10px;
+}
+
+#profit-title {
+  font-size: 18pt;
+}
+#total-profit {
+  font-size: 18pt;
+  font-weight: 700;
+}
+#top-sidebar {
+  position: absolute;
+  left: 650px;
+  width: 200px;
+  font-size: 10pt;
+  color: #555
+}
+
+</style>
+</head>
+<body onload="main()">
+  <script src="https://www.gstatic.com/external_hosted/d3/d3.min.js"></script>
+  <script src="bundle.js"></script>
+
+  <h1 id="title-section">Attacking discrimination with smarter machine learning</h1>
+
+  <div class="prose" style="position:relative">
+  <p><p>
+  <div id="top-sidebar">
+    By Martin Wattenberg, Fernanda Vi&eacute;gas, and Moritz Hardt.
+    <p>
+    This page is a companion to a <a href="https://drive.google.com/file/d/0B-wQVEjH9yuhanpyQjUwQS1JOTQ/view">
+    recent paper by Hardt, Price, Srebro</a>, which discusses ways to define and
+    remove discrimination by improving machine learning systems.
+  </div>
+
+  <p>
+As machine learning is increasingly used to make important
+decisions across core social domains, the work of ensuring
+    that these decisions aren't discriminatory becomes crucial.
+  <p>
+Here we discuss "threshold classifiers," a part of some machine
+    learning systems that is critical to issues of discrimination.
+    A threshold classifier essentially makes a yes/no decision,
+    putting things in one category or another.
+    We look at how these classifiers work, ways they can
+    potentially be unfair, and how you might turn an unfair
+    classifier into a fairer one. As an illustrative example,
+    we focus on loan granting scenarios where a bank may grant
+    or deny a loan based on a single, automatically computed number
+    such as a credit score.
+  <p>
+
+
+  </div><!-- prose -->
+
+
+  <table>
+     <tr>
+      <td>&nbsp;</td>
+      <td colspan=3>
+          <div class="figure-title" style="margin-bottom:20px">
+          Loan applicants: two scenarios
+          </div>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+        <table>
+          <tr><td width="200" valign="top" align="right">
+            <div style="margin-top:44px">
+            <span class="margin-bold">Credit Score</span><br>
+            <span class="margin-text">
+            higher scores represent higher likelihood of payback
+            </span>
+            </div>
+          </td></tr>
+          <tr><td width="200" valign="bottom" align="right">
+            <div style="margin-top:160px">
+            <span class="margin-text">
+            each circle represents a person,
+            with dark circles showing people who pay back their
+            loans and light circles showing people who default
+            </span>
+            </div>
+          </td></tr>
+          <tr><td width="200" valign="bottom" align="right">
+            <div style="margin-top:30px">
+            <span class="margin-bold">Color</span>
+            </div>
+          </td></tr>
+
+        </table>
+      </td>
+
+      <td valign="top">
+        <div class="big-label" style="margin-bottom:50px">A. Clean separation</div>
+        <div id="plain-histogram0"></div>
+        <div id="plain-histogram-legend0" class="histogram-legend"></div>
+      </td>
+      <td width=30>&nbsp;</td>
+      <td valign="top">
+        <div class="big-label" style="margin-bottom:50px">B. Overlapping categories</div>
+        <div id="plain-histogram1"></div>
+        <div id="plain-histogram-legend1" class="histogram-legend"></div>
+      </td>
+
+    </tr>
+  </table>
+
+  <div class="prose">
+  <p>
+In the diagram above, dark dots represent people who would
+    pay off a loan, and the light dots those who wouldn't.
+    In an ideal world, we would work with statistics that
+    cleanly separate categories as in the left example.
+    Unfortunately, it is far more common to see the situation
+    at the right, where the groups overlap.
+  <p>
+
+A single statistic can stand in for many different variables,
+    boiling them down to one number. In the case of a credit score,
+    which is computed looking at a number of factors, including income,
+    promptness in paying debts, etc., the number might correctly represent
+    the likelihood that a person will pay off a loan, or default.
+    Or it might not. The relationship is usually fuzzy&mdash;it's rare to
+    find a statistic that correlates perfectly with real-world outcomes.
+  <p>
+This is where the idea of a "threshold classifier" comes in:
+    the bank picks a particular cut-off, or threshold,
+    and people whose credit scores are below it are denied the loan,
+    and people above it are granted the loan. (Obviously real banks
+    have many additional complexities, but this simple model
+    is useful for studying some of the fundamental issues.
+    And just to be clear, Google doesn't use credit scores
+    in its own products.)
+
+  <p>
+  </div><!-- prose -->
+
+
+  <table>
+    <tr>
+      <td>&nbsp;</td>
+      <td colspan=3>
+          <div class="figure-title">
+          Simulating loan thresholds
+          </div>
+          <div class="figure-caption">
+          Drag the black threshold bars left or right to change the cut-offs for loans.<br>
+          </div>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+        <table>
+          <tr><td width="200" valign="top" align="right">
+            <div style="margin-top:44px">
+            <span class="margin-bold">Credit Score</span><br>
+            <span class="margin-text">
+            higher scores represent higher likelihood of payback
+            </span>
+            </div>
+          </td></tr>
+          <tr><td width="200" valign="bottom" align="right">
+            <div style="margin-top:160px">
+            <span class="margin-text">
+            each circle represents a person,
+            with dark circles showing people who pay back their
+            loans and light circles showing people who default
+            </span>
+            </div>
+          </td></tr>
+          <tr><td width="200" valign="bottom" align="right">
+            <div style="margin-top:30px">
+            <span class="margin-bold">Color</span>
+            </div>
+          </td></tr>
+
+        </table>
+      </td>
+
+      <td valign="top">
+        <div class="big-label" style="margin-bottom:50px">Threshold Decision</div>
+        <div id="single-histogram0"></div>
+        <div id="single-histogram-legend0" class="histogram-legend"></div>
+      </td>
+      <td width=30>&nbsp;</td>
+      <td valign="top">
+        <div class="big-label" style="margin-bottom:20px;margin-left:10px">Outcome</div>
+        <div id="single-correct0"></div>
+        <div id="single-pies0"></div>
+        <div class="profit-readout">Profit: <span class="readout" id="single-profit0"></span></div>
+      </td>
+    </tr>
+  </table>
+
+   <div class="prose">
+    <p>
+   The diagram above uses synthetic data to show how a threshold classifier works.
+   (To simplify the explanation, we're staying away from real-life credit
+   scores or data--what you see shows simulated data with a zero-to-100
+   based "score".) As you can see, picking a threshold requires
+   some tradeoffs. Too low, and the bank gives loans to many people
+   who default. Too high, and many people who deserve a loan won't get one.
+  <p>
+    So what is the best threshold? It depends. One goal might be to
+    maximize the number of correct decisions.
+    (What threshold does that in this example?)
+    <p>
+     Another goal, in a financial situation, could be to maximize
+     profit. At the bottom of the diagram is a readout of
+     a hypothetical "profit", based on a model where a successful
+     loan makes $300, but a default costs the bank $700. What
+     is the most profitable threshold? Does it match the threshold
+     with the most correct decisions?
+
+
+<h1 id="groups-section">Classification and Discrimination</h1>
+
+     The issue of how "the correct" decision is defined,
+     and with sensitivities to which factors,
+     becomes particularly thorny when a statistic
+     like a credit score ends up distributed differently between two groups.
+     <p>
+     Imagine we have two groups of people, "blue" and "orange."
+       We are interested in making small loans, subject to the
+       following rules:
+    <ul>
+      <li>A successful loan makes $300</li>
+      <li>An unsuccessful loan costs $700</li>
+      <li>Everyone has a credit score between 0 and 100</li>
+    </ul>
+
+         </div> <!-- prose -->
+  <div class="figure-title">
+    Simulating loan decisions for different groups
+  </div>
+  <div class="figure-caption">
+    Drag the black threshold bars left or right to change the cut-offs for loans.<br>
+    Click on different preset loan strategies.
+  </div>
+  <table>
+    <tr>
+      <td rowspan=4 width=200 valign="top">
+        <div class="big-label" style="margin-top:3px">Loan Strategy</div>
+        <span class="margin-text">
+          Maximize profit with:
+          <br><br><br>
+          <button class="demo" id="max-profit">MAX PROFIT</button>
+          <br>No constraints
+          <p><br>
+          <button class="demo" id="group-unaware">GROUP UNAWARE</button>
+          <br>
+          Blue and orange thresholds<br>are the same
+          <p><br>
+          <button class="demo" id="demographic-parity">DEMOGRAPHIC PARITY</button>
+          <br>
+          Same fractions blue / orange loans
+          <p><br>
+          <button class="demo" id="equal-opportunity">EQUAL OPPORTUNITY</button>
+          <br>
+          Same fractions blue / orange loans<br>
+          to people who can pay them off
+          <br><br><br>
+
+          <div class="thin annotation max-profit-annotation">
+            <div class="title">Max Profit</div>
+            The most profitable, since there are no constraints.
+            But the two groups have different thresholds, meaning they
+            are held to different standards.
+          </div>
+          <div class="thin annotation group-unaware-annotation">
+            <div class="title">Group Unaware</div>
+            Both groups have the same threshold, but the orange group has
+            been given fewer loans overall. Among people
+            who would pay back a loan, the orange group is also at a
+            disadvantage.
+          </div>
+          <div class="thin annotation demographic-parity-annotation">
+            <div class="title">Demographic Parity</div>
+            The number of loans given to each group is the same, but among people
+            who would pay back a loan, the blue group is at a
+            disadvantage.
+          </div>
+          <div class="thin annotation equal-opportunity-annotation">
+            <div class="title">Equal Opportunity</div>
+            Among people
+            who would pay back a loan, blue and orange groups do equally well.
+            This choice is almost as profitable as demographic parity,
+            and about as many people get loans overall.
+          </div>
+        </span>
+      </td>
+      <td colspan=3>
+
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+        <div class="big-label">Blue Population</div>
+        <br><br>
+        <div id="histogram0"></div>
+        <div id="histogram-legend0" class="histogram-legend"></div>
+      </td>
+      <td width=20>&nbsp;</td>
+      <td valign="top">
+        <!-- start upper right content label -->
+        <div class="big-label" style="margin-left:10px">Orange Population</div>
+        <!-- end upper right content label -->
+        <br><br>
+        <!-- start upper right content -->
+        <div id="histogram1"></div>
+        <div id="histogram-legend1" class="histogram-legend"></div>
+        <!-- end upper right content -->
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+         <div id="profit-title" style="position:relative">
+           Total profit = <span id="total-profit"></span>
+            <div style="position:absolute;left:-20;top:-20">
+            <svg>
+            <rect class="annotation max-profit-annotation"
+             x="10" y="10" width="230" height="50" rx="20" ry="20"
+            />
+            </svg>
+            </div>
+          </div>
+      </td>
+      <td width=20>&nbsp;</td>
+      <td valign="top">
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <!-- start lower left content -->
+        <div id="correct0"></div>
+        <div id="pies0"></div>
+        <div class="profit-readout">Profit: <span class="readout" id="profit0"></span></div>
+        <!-- end lower left content-->
+      </td>
+      <td width=20>&nbsp;</td>
+      <td valign="top">
+        <div id="correct1"></div>
+        <div id="pies1"></div>
+        <div class="profit-readout">Profit: <span class="readout" id="profit1"></span></div>
+      </td>
+    </tr>
+  </table>
+  <br><br>
+    <div class="prose">
+In this case, the distributions of the two groups are slightly
+      different, even though blue and orange people are equally
+      likely to pay off a loan. If you look for pair of thresholds
+      that maximize total profit (or click the "max profit" button) you'll
+      see that the blue group is held to a higher standard
+      than the orange one.
+    <p>
+    That could be a problem&mdash;and one obvious solution for the bank
+    not to just pick thresholds to make as much money as possible.
+
+    Another approach would be to implement a
+      <span class="title">group-unaware</span>, which holds
+      all groups to the same standard. Is this really
+      the right solution, though? For one thing,
+      if there are real differences between two groups,
+      it might not be fair to ignore them&mdash;for example,
+      women generally pay less for life insurance than men,
+      since they tend to live longer.
+      <p>
+        But there are other,
+      mathematical problems with a group-unaware approach even
+      if both groups are equally loan-worthy. In the example above,
+      the differences in score distributions means that the orange group actually
+      gets fewer loans when the bank looks for the
+      most profitable group-unaware threshold.
+    <p>
+    If the goal is for the two groups to receive the same number of loans,
+    then a natural criterion is <span class="title">demographic parity</span>,
+    where the bank uses loan thresholds that yield the
+    same fraction of loans to each group. Or, as a computer scientist
+    might put it, the "positive rate" is the same across both groups.
+
+    <p>
+    In some contexts, this might be the right goal. In the situation in the diagram,
+    though, there's still something problematic: a demographic parity
+    constraint only looks at loans given, not rates at which loans
+    are paid back. In this case, the criterion results in
+    fewer qualified people in the blue group
+    being given loans than in the orange group.
+    <p>
+    To avoid this situation, the <a href="https://drive.google.com/file/d/0B-wQVEjH9yuhanpyQjUwQS1JOTQ/view">paper by Hardt, Price, Srebro<a/> defines a
+      concept called <span class="title">equal opportunity</span>. Here, the constraint is that of
+      the people who can pay back a loan, the same fraction in each group should actually
+      be granted a loan. Or, in data science jargon, the "true positive rate" is
+      identical between groups.
+
+  <p>
+  <h1 id="conclusion-section">Improving machine learning systems</h1>
+A key result in the paper by Hardt, Price, and Srebro shows
+      that&mdash;given essentially any scoring system&mdash;it's
+      possible to efficiently find thresholds that meet any of these criteria.
+      In other words, even if you don't have control over the underlying
+      scoring system (a common case) it's still possible to attack
+      the issue of discrimination.
+<p>
+For organizations that do have control over the scoring system,
+  using these definitions can help clarify core issues.
+  If a classifier isn't as effective for some groups as others,
+  it can cause problems for the groups with the most uncertainty.
+  Restricting to equal opportunity thresholds transfers the "burden of
+  uncertainty" away from these groups and onto the creators of
+  the scoring system. Doing so provides an incentive to invest
+  in better classifiers.<p>
+
+This work is just one step in a long chain of research.
+      Optimizing for equal opportunity is just one of many tools
+      that can be used to improve machine learning systems&mdash;and
+      mathematics alone is unlikely to lead to the best solutions.
+      Attacking discrimination in machine learning will ultimately
+      require a careful, multidisciplinary approach.
+      <p>
+      <div style="font-weight:100;margin-top:50px">
+      Thanks to Meredith Whittaker, Daniel Smilkov, Jimbo Wilson,
+      and our other
+      colleagues at Google for their help with this piece.
+      </div>
+  </div>
+</body>
+</html>
