@@ -2,7 +2,7 @@
 Attacking discrimination with smarter machine learning
 ## Annotated Directory structure
 <pre>
-<strong>MachineLearningIntro</strong>
+<strong>CreditRiskScoring</strong>
 ├── static
 │   ├── app
 │   │   ├── components
