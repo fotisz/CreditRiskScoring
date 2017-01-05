@@ -8,3 +8,9 @@ Attacking discrimination with smarter machine learning
 ├── LICENSE
 └── README.md
 </pre>
+Task List 
+---
+- [x] Annotated directory structure 
+- [x] Set up Amplitude analytics    -- Event-based analytics
+- [ ] Set up Google analytics       -- User-based analytics
+- [ ] Clean up code
