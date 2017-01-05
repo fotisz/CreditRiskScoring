@@ -10,7 +10,6 @@ Attacking discrimination with smarter machine learning
 </pre>
 Task List 
 ---
-- [x] Annotated directory structure 
-- [x] Set up Amplitude analytics    -- Event-based analytics
-- [ ] Set up Google analytics       -- User-based analytics
-- [ ] Clean up code
+- [ ] Update content 
+- [ ] Update data
+- [ ] Make external libraries local
