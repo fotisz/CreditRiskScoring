@@ -4,7 +4,8 @@ Attacking discrimination with smarter machine learning
 <pre>
 <strong>CreditRiskScoring</strong>
 ├── bundle.js                       <i># Model Specification</i> 
-├── index.html                      <i># Index.html file</i>  
+├── index.html                      <i># Index.html file</i>
+├── style.css                       <i># Style.ccs file</i>  
 ├── LICENSE
 └── README.md
 </pre>
