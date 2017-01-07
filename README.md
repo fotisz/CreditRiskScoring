@@ -13,5 +13,5 @@ Task List
 ---
 - [ ] Update content 
 - [ ] Update data
-- [ ] Make external libraries local
+- [x] Make external libraries local
 - [ ] Add favicon
